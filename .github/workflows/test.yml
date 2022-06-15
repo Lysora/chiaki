@@ -1,0 +1,76 @@
+name: Build chiaki for windows in testing
+
+on: [push] #workflow_dispatch
+
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v1  # not v2!
+        with:
+          path: ../Qt
+          key: ${{ runner.os }}-QtCache
+
+      - name: Setup Qt
+        uses: jurplel/install-qt-action@v2.14.0
+        with:
+          version: 5.15.2
+          setup-python: false
+      #    dir: "C:/"
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+
+      - name: Setup msvc
+        uses: TheMrMilchmann/setup-msvc-dev@v1
+        with:
+          arch: x64
+
+      - name: Setup env
+        shell: cmd
+        run: |
+          python -m pip install protobuf
+          for /f %%i in ('where python3') do (echo WIN_PYTHON=%%i >> %GITHUB_ENV%)
+          echo WIN_QT=${{ env.Qt5_Dir }} >> %GITHUB_ENV%
+          echo WIN_PATH=%path%
+
+      - name: Switch to msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          release: false
+          path-type: inherit #windows path can be used in msys2
+          update: false
+          install: >-
+            git
+            p7zip
+            diffutils
+            pkgconf
+            ninja
+            yasm
+            make
+            cmake
+
+      - name: Compile
+        shell: msys2 {0}
+        run: |
+          pacman -Sy --noconfirm mingw-w64-x86_64-SDL2
+          echo "MSYS2_PATH=$PATH"
+          cd "${{ github.workspace }}"
+          echo "We are in $PWD now"
+          export GHA_BUILD_FOLDER="$PWD"
+          export WIN_PYTHON="${{ env.WIN_PYTHON }}"
+          qtdir="${{ env.WIN_QT }}"
+          export WIN_QT=${qtdir/ /}
+          echo "Start compile script ..."
+          ./scripts/gha-win.sh
+
+      - name: Pack
+        uses: actions/upload-artifact@v3
+        with:
+          name: Chiaki
+          path: Chiaki
