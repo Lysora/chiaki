@@ -19,6 +19,8 @@ git clone https://git.ffmpeg.org/ffmpeg.git --depth 1 -b $TAG && cd ffmpeg || ex
     --enable-hwaccel=hevc_dxva2 \
     --enable-hwaccel=h264_d3d11va \
     --enable-hwaccel=hevc_d3d11va \
+    --enable-demuxers \
+    --enable-parsers \
     --prefix="$ROOT/ffmpeg-prefix" "$@" \
     || exit 1
 make -j4 || exit 1
