@@ -220,11 +220,15 @@ static void *takion_send_buffer_thread_func(void *user)
 		else // if not, wait without timeout, but also wakeup if packets become available
 			err = chiaki_cond_wait_pred(&send_buffer->cond, &send_buffer->mutex, takion_send_buffer_check_pred_no_packets, send_buffer);
 
-		if(err != CHIAKI_ERR_SUCCESS && err != CHIAKI_ERR_TIMEOUT)
+		if(err != CHIAKI_ERR_SUCCESS && err != CHIAKI_ERR_TIMEOUT) {
+			CHIAKI_LOGI(send_buffer->log, "Lysora: reason 1");
 			break;
+		}
 
-		if(send_buffer->should_stop)
+		if(send_buffer->should_stop) {
+			CHIAKI_LOGI(send_buffer->log, "Lysora: reason 2");
 			break;
+		}
 
 		takion_send_buffer_resend(send_buffer);
 	}
